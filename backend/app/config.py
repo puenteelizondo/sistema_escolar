@@ -4,6 +4,8 @@ import os
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql+psycopg://escuela:escuela@localhost:5432/escuela"
 )
+if DATABASE_URL.startswith(("postgres://", "postgresql://")):  # Render entrega la URL sin el driver
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL.split("://", 1)[1]
 SECRET_KEY = os.getenv("SECRET_KEY", "cambia-esta-clave-en-produccion")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 SESSION_HORAS = int(os.getenv("SESSION_HORAS", "12"))

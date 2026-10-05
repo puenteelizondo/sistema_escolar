@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select, text
@@ -67,6 +68,8 @@ async def cabeceras(request: Request, call_next):
     resp.headers["Referrer-Policy"] = "same-origin"
     if request.url.path.startswith("/api/"):
         resp.headers["Cache-Control"] = "no-store"
+    elif "Cache-Control" not in resp.headers:
+        resp.headers["Cache-Control"] = "no-cache"
     return resp
 
 
@@ -106,5 +109,6 @@ async def integridad(request: Request, exc: IntegrityError):
     return JSONResponse(status_code=409, content={"detail": "El registro entra en conflicto con datos existentes (duplicado o referencia en uso)"})
 
 
-if FRONTEND_DIR and os.path.isdir(FRONTEND_DIR):  # solo desarrollo local sin nginx
+if FRONTEND_DIR and os.path.isdir(FRONTEND_DIR):  # sin nginx: desarrollo local o despliegue en un solo contenedor (Render)
+    app.add_middleware(GZipMiddleware, minimum_size=800)
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

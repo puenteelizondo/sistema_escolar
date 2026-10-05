@@ -1,0 +1,28 @@
+# Blueprint de Render: crea la base de datos PostgreSQL y el sitio web en un solo paso.
+databases:
+  - name: escuela-db
+    plan: free
+    databaseName: escuela
+    user: escuela
+
+services:
+  - type: web
+    name: sistema-escolar
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: escuela-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: CARGAR_DATOS_DEMO
+        value: "true"
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false   # Render te la pide al crear el servicio

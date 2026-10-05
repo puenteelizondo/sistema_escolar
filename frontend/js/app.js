@@ -48,24 +48,83 @@ function parseHash() {
 }
 
 // ---------------------------------------------------------------- login
+const CARRO_SVG = `<svg class="lg-car" viewBox="0 0 700 220" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9d3ea"/></linearGradient>
+    <radialGradient id="fa" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#7fd0ff" stop-opacity=".9"/><stop offset="1" stop-color="#7fd0ff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g stroke="#4aa3ff" stroke-width="3" stroke-linecap="round" opacity=".55"><path d="M10 120h120M30 140h90M0 160h110"/></g>
+  <ellipse cx="350" cy="196" rx="300" ry="12" fill="#000" opacity=".45"/>
+  <path d="M96 168c-22 0-34-8-36-24l-2-18c0-12 8-20 20-22l86-20 74-42c10-6 22-9 34-9h126c18 0 34 6 48 17l56 40 74 12c18 3 28 14 28 32v10c0 7-5 12-12 12h-30a50 50 0 0 0-100 0H224a50 50 0 0 0-100 0z" fill="url(#cb)"/>
+  <path d="M232 100l64-40h120c12 0 22 4 31 11l44 31z" fill="#0b1636" stroke="#4aa3ff" stroke-width="2"/>
+  <path d="M356 60v40" stroke="#c9d3ea" stroke-width="3"/>
+  <path d="M60 138h582" stroke="#e11d2e" stroke-width="7"/>
+  <path d="M60 150h582" stroke="#12203a" stroke-width="3" opacity=".5"/>
+  <path d="M618 122h22c8 0 12 5 12 12v4h-34z" fill="#fff6c9"/>
+  <ellipse cx="648" cy="130" rx="46" ry="26" fill="url(#fa)"/>
+  <g><circle cx="174" cy="170" r="42" fill="#0b1636" stroke="#e5ecfa" stroke-width="4"/><circle cx="174" cy="170" r="22" fill="#12203a" stroke="#8fb7ff" stroke-width="3"/><path d="M174 148v44M152 170h44M158 154l32 32M190 154l-32 32" stroke="#8fb7ff" stroke-width="2.5"/>
+  <circle cx="500" cy="170" r="42" fill="#0b1636" stroke="#e5ecfa" stroke-width="4"/><circle cx="500" cy="170" r="22" fill="#12203a" stroke="#8fb7ff" stroke-width="3"/><path d="M500 148v44M478 170h44M484 154l32 32M516 154l-32 32" stroke="#8fb7ff" stroke-width="2.5"/></g>
+</svg>`;
+const BANDERA = `<svg class="lg-flag" viewBox="0 0 64 32" aria-hidden="true"><rect width="64" height="32" fill="#fff"/>${
+  Array.from({ length: 16 }, (_, i) => { const x = (i % 8) * 8, y = Math.floor(i / 8) * 8 + ((i % 8) % 2 ? 0 : 8); return `<rect x="${x}" y="${y}" width="8" height="8" fill="#0b1636"/>`; }).join('')
+}</svg>`;
+const CARRERAS = [
+  'Técnico profesional en motores a gasolina', 'Técnico profesional en electricidad automotriz',
+  'Diplomado en electrónica automotriz', 'Reparación de computadoras automotrices',
+];
+
 async function mostrarLogin(mensaje) {
   try { publica = await get('/config/publica'); } catch { /* usa valores por defecto */ }
   state.me = null;
   document.title = publica.escuela_nombre;
+  const { CIRCUITO } = await import('./loginart.js');
   setHTML(app, html`<div class="login-wrap">
-    <form class="login-card" autocomplete="on">
-      ${publica.logo ? html`<img class="login-logo" src="${publica.logo}" alt="">` : html`<div class="login-logo-ph">${raw(icon('tool', 34))}</div>`}
-      <h1>${publica.escuela_nombre}</h1>
-      <p class="muted">Control escolar y caja</p>
-      <label class="field"><span>Usuario</span><input name="username" autocomplete="username" autofocus required></label>
-      <label class="field"><span>Contraseña</span><input name="password" type="password" autocomplete="current-password" required></label>
-      <div class="form-error" ${raw(mensaje ? '' : 'hidden')}>${mensaje || ''}</div>
-      <button class="btn primary xl block">INICIAR SESIÓN</button>
-    </form></div>`);
+    ${raw(CIRCUITO)}
+    <div class="lg-glow"></div>
+    <section class="lg-hero">
+      <div class="lg-brand">
+        ${publica.logo ? html`<img class="lg-logo" src="${publica.logo}" alt="">` : html`<div class="lg-logo-ph">${raw(icon('tool', 34))}</div>`}
+        <div class="lg-nombre">${publica.escuela_nombre}</div>
+      </div>
+      <h2 class="lg-titulo">Invertir en tu <span>capacitación</span><br>es garantizar un mejor futuro</h2>
+      <div class="lg-carreras">
+        <div class="lg-car-t">CARRERAS</div>
+        <ul>${CARRERAS.map((c) => html`<li>${raw(icon('check', 16))}<span>${c}</span></li>`)}</ul>
+      </div>
+      <div class="lg-cinta"><b>Estudia una carrera</b> con gran demanda laboral</div>
+      ${raw(CARRO_SVG)}
+    </section>
+    <main class="login-side">
+      <form class="login-card" autocomplete="on">
+        ${raw(BANDERA)}
+        <div class="login-mini">
+          ${publica.logo ? html`<img class="login-logo" src="${publica.logo}" alt="">` : html`<div class="login-logo-ph">${raw(icon('tool', 34))}</div>`}
+          <div class="login-mini-n">${publica.escuela_nombre}</div>
+        </div>
+        <div>
+          <h1>Bienvenido</h1>
+          <p class="muted">Inicia sesión para entrar al sistema</p>
+        </div>
+        <label class="field ico-field"><span>Usuario</span>
+          <div class="in-ico">${raw(icon('user', 18))}<input name="username" autocomplete="username" placeholder="Tu usuario" autofocus required></div></label>
+        <label class="field ico-field"><span>Contraseña</span>
+          <div class="in-ico">${raw(icon('key', 18))}<input name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required>
+            <button type="button" class="ojo" data-ojo aria-label="Mostrar contraseña">Ver</button></div></label>
+        <div class="form-error" ${raw(mensaje ? '' : 'hidden')}>${mensaje || ''}</div>
+        <button class="btn primary xl block login-go">INICIAR SESIÓN</button>
+        <p class="login-pie">¿Olvidaste tu acceso? Pídelo al administrador de la escuela.</p>
+      </form>
+    </main></div>`);
+  $('[data-ojo]', app).addEventListener('click', (e) => {
+    const inp = $('input[name=password]', app);
+    const ver = inp.type === 'password';
+    inp.type = ver ? 'text' : 'password';
+    e.currentTarget.textContent = ver ? 'Ocultar' : 'Ver';
+  });
   const f = $('form', app);
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = $('button', f);
+    const btn = $('.login-go', f);
     const er = $('.form-error', f);
     btn.disabled = true;
     er.hidden = true;
