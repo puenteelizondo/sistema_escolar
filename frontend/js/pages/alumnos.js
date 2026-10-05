@@ -233,6 +233,8 @@ function cardInscripcion(i, verPagos) {
         ${can('inscripciones.admin') && i.estado !== 'retirada' ? html`<button class="btn sm danger-o" data-act="retirar" data-id="${i.id}">Retirar del curso</button>` : ''}
       </div>
     </div>
+    ${i.estado === 'retirada' ? html`<div class="retiro-info"><b>Retirado del curso</b>${i.fecha_retiro ? html` el ${fdate(i.fecha_retiro)}` : ''}${i.retiro_usuario ? html` · por ${i.retiro_usuario}` : ''}<br>
+      <span class="muted">Motivo:</span> ${i.retiro_motivo || 'sin motivo registrado'}</div>` : ''}
     ${as ? html`<div class="asis-line">Asistencia: <b>${as.asistencias}</b> · Faltas: <b>${as.faltas}</b> · Retardos: <b>${as.retardos}</b>${as.justificadas ? html` · Justificadas: <b>${as.justificadas}</b>` : ''}
       · <b>${as.porcentaje}%</b></div>` : ''}
     ${verPagos && i.mensualidades.length ? tabla([

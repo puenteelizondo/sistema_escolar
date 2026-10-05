@@ -199,6 +199,12 @@ def resumen_cobro(db: Session, alumno: Alumno) -> dict:
         .order_by(Inscripcion.fecha_inicio.desc())
     ).unique().all()
 
+    retiros = {}  # inscripcion_id -> (usuario, motivo) tomado del registro de actividad
+    ids_retiradas = [x.id for x in inscs if x.estado == "retirada"]
+    if ids_retiradas:
+        for l in db.scalars(select(Log).where(Log.accion == "retirar_alumno_curso", Log.entidad == "inscripcion",
+                                              Log.entidad_id.in_(ids_retiradas)).order_by(Log.fecha)):
+            retiros[l.entidad_id] = (l.usuario, (l.detalle or "").rsplit(" · ", 1)[-1])
     out_inscs, pendientes = [], []
     for i in inscs:
         mens = [mens_dict(m, h, aviso) for m in i.mensualidades]
@@ -210,6 +216,8 @@ def resumen_cobro(db: Session, alumno: Alumno) -> dict:
             "fecha_fin": i.fecha_fin, "costo_inscripcion": money(i.costo_inscripcion),
             "mensualidad": money(i.mensualidad), "num_mensualidades": i.num_mensualidades,
             "saldo_total": round(saldo_total, 2), "mensualidades": mens,
+            "fecha_retiro": i.fecha_retiro,
+            "retiro_usuario": retiros.get(i.id, (None, None))[0], "retiro_motivo": retiros.get(i.id, (None, None))[1],
         })
         if i.estado != "retirada":
             for m in mens:

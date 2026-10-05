@@ -587,3 +587,5 @@ body.kiosko #view { padding: 0 !important; }
 .cam-box video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
 .cam-msg { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; text-align: center; color: #fff; font-size: .92rem; }
 .cam .modal-actions { justify-content: center; margin-top: 14px; }
+.retiro-info { margin: 10px 0 4px; padding: 10px 14px; border-radius: 10px; background: var(--rojo-bg); color: var(--rojo-t); border-left: 4px solid var(--rojo); font-size: .92rem; }
+.retiro-info .muted { color: inherit; opacity: .75; }
