@@ -272,7 +272,7 @@ export function tabla(columnas, filas, { vacio = 'Sin resultados', clase = '' } 
   if (!filas.length) return html`<div class="empty">${vacio}</div>`;
   return html`<div class="table-wrap"><table class="tabla ${clase}">
     <thead><tr>${columnas.map((c) => html`<th class="${c.cls || ''}">${c.label}</th>`)}</tr></thead>
-    <tbody>${filas.map((f) => html`<tr ${raw(f._attrs || '')} class="${f._cls || ''}">${columnas.map((c) => html`<td class="${c.cls || ''}" data-label="${c.label}">${c.render ? c.render(f) : f[c.key]}</td>`)}</tr>`)}</tbody>
+    <tbody>${filas.map((f) => html`<tr ${raw(f._attrs || '')} class="${f._cls || ''}">${columnas.map((c) => html`<td class="${c.cls || ''}" data-label="${c.label}"><span class="td-v">${c.render ? c.render(f) : f[c.key]}</span></td>`)}</tr>`)}</tbody>
   </table></div>`;
 }
 

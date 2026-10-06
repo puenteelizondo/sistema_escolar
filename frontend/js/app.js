@@ -157,6 +157,16 @@ function menuHTML() {
     ${admin.length ? html`<div class="nav-sec">Administración</div>${admin.map(([k, r]) => item(k, r))}` : ''}`;
 }
 
+const BARRA = ['inicio', 'cobro', 'alumnos', 'asistencia', 'cursos', 'entrada', 'pagos'];
+const CORTO = { inicio: 'Inicio', cobro: 'Cobrar', alumnos: 'Alumnos', asistencia: 'Asistencia', cursos: 'Cursos', entrada: 'Entrada', pagos: 'Pagos' };
+function barraHTML() {
+  const items = BARRA.filter((k) => RUTAS[k] && permitido(RUTAS[k])).slice(0, 4);
+  if (!items.length) return '';
+  return html`<nav class="bnav" aria-label="Accesos rápidos">
+    ${items.map((k) => html`<a href="#/${k}" class="bnav-i nav-item" data-ruta="${k}">${raw(icon(RUTAS[k].icono, 22))}<span>${CORTO[k]}</span></a>`)}
+    <button class="bnav-i" data-menu>${raw(icon('menu', 22))}<span>Menú</span></button></nav>`;
+}
+
 function iniciar() {
   document.title = publica.escuela_nombre || 'Sistema Escolar';
   const me = state.me;
@@ -178,12 +188,14 @@ function iniciar() {
     <div class="main">
       <header class="topbar">
         <button class="icon-btn hamb" data-menu aria-label="Menú">${raw(icon('menu', 22))}</button>
+        ${publica.logo ? html`<img class="tb-logo" src="${publica.logo}" alt="">` : html`<div class="tb-logo tb-ph">${raw(icon('tool', 16))}</div>`}
         <h1 id="page-title"></h1>
         ${canAny('alumnos.ver', 'pagos.registrar') ? html`<form class="gsearch" data-gsearch>${raw(icon('search', 18))}
           <input name="q" placeholder="Buscar matrícula o nombre…" autocomplete="off" aria-label="Buscar alumno"></form>` : ''}
       </header>
       <main id="view" tabindex="-1"></main>
     </div>
+    ${barraHTML()}
   </div>`);
 
   on(app, 'click', '[data-menu]', () => document.body.classList.toggle('menu-abierto'));
