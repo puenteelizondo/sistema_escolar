@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..db import get_db
 from ..models import Alumno, Asistencia, Curso, Inscripcion, Log, Pago, Ticket, Usuario
-from ..schemas import AlumnoIn, FotoIn, MotivoIn
+from ..schemas import AlumnoIn, CredencialIn, FotoIn, MotivoIn
 from ..security import require
 from ..services import (
     alumno_dict, estados_pago_alumnos, log, resumen_cobro, siguiente_matricula,
@@ -160,6 +160,22 @@ def cambiar_foto(aid: int, data: FotoIn, user: Usuario = Depends(require("alumno
     log(db, user, "foto_alumno" if data.foto else "quitar_foto_alumno", "alumno", a.id, a.matricula)
     db.commit()
     return {"ok": True}
+
+
+@router.put("/alumnos/{aid}/credencial")
+def asignar_credencial(aid: int, data: CredencialIn, user: Usuario = Depends(require("alumnos.editar")),
+                       db: Session = Depends(get_db)):
+    """Guarda (o quita con null) el número que manda el lector al acercar la tarjeta de chip del alumno."""
+    a = _alumno_o_404(db, aid, user)
+    c = data.credencial
+    if c:
+        otro = db.scalar(select(Alumno).where(or_(Alumno.credencial == c, Alumno.matricula == c), Alumno.id != aid))
+        if otro:
+            raise HTTPException(409, f"Esa credencial ya está asignada a {otro.matricula} · {otro.nombre_completo}")
+    a.credencial = c
+    log(db, user, "asignar_credencial" if c else "quitar_credencial", "alumno", a.id, f"{a.matricula} · {c or 'sin chip'}")
+    db.commit()
+    return {"ok": True, "credencial": c}
 
 
 @router.put("/alumnos/{aid}")

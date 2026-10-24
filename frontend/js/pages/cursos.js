@@ -4,6 +4,7 @@ import {
   enviarForm, confirmar, pedirTexto, hoyISO, spinner,
 } from '../ui.js';
 import { can } from '../state.js';
+import { verCredenciales } from '../credencial.js';
 import { planteles, instructores, AREAS, ESTADOS_CURSO, DIAS, diasTexto, invalidar } from '../catalog.js';
 
 // ---------------------------------------------------------------- lista
@@ -110,6 +111,7 @@ export async function cursoDetalle(root, ctx) {
       <div class="exp-btns">
         ${can('inscripciones.admin') && !['cancelado', 'terminado'].includes(c.estado) ? html`<button class="btn primary" data-insc>Inscribir alumno</button>` : ''}
         ${can('asistencia.registrar') || can('asistencia.ver') ? html`<a class="btn" href="#/asistencia?curso=${c.id}">Asistencia</a>` : ''}
+        ${can('alumnos.ver') && activos.length ? html`<button class="btn" data-creds>🪪 Credenciales</button>` : ''}
         ${can('cursos.admin') ? html`<button class="btn" data-edit>Editar</button>` : ''}
         ${can('cursos.admin') && c.estado !== 'cancelado' ? html`<button class="btn danger-o" data-cancelar>Cancelar curso</button>` : ''}
         ${can('cursos.admin') && !c.alumnos.length ? html`<button class="btn danger-o" data-eliminar>Eliminar</button>` : ''}
@@ -127,6 +129,13 @@ export async function cursoDetalle(root, ctx) {
       ], c.alumnos.map((a) => ({ ...a, _cls: a.estado_inscripcion === 'retirada' ? 'tachado' : '' })), { vacio: 'Aún no hay alumnos inscritos en este curso.' })}
     </section></div>`);
   on(root, 'click', '[data-edit]', () => formCurso(c, refrescar));
+  on(root, 'click', '[data-creds]', async () => {
+    try {
+      const lista = await get(`/cursos/${c.id}/credenciales`);
+      if (!lista.length) { toast('No hay alumnos activos en este curso', 'info'); return; }
+      verCredenciales(lista, { nombre: ctx.publica.escuela_nombre, logo: ctx.publica.logo }, { titulo: `Credenciales · ${c.nombre}` });
+    } catch (e) { toast(e.message, 'error'); }
+  });
   on(root, 'click', '[data-insc]', () => abrirInscribir({ curso: c, onDone: refrescar }));
   on(root, 'click', '[data-cancelar]', async () => {
     const motivo = await pedirTexto({ titulo: 'Cancelar curso', mensaje: `¿Cancelar «${c.nombre}»? Los alumnos y pagos se conservan en el historial.`, etiqueta: 'Motivo', si: 'Cancelar curso', peligro: true });

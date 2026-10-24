@@ -37,6 +37,9 @@ def esperar_bd(intentos: int = 40):
 async def lifespan(app: FastAPI):
     esperar_bd()
     Base.metadata.create_all(engine)
+    with engine.begin() as c:  # columnas agregadas después de la primera versión (bases ya existentes)
+        c.execute(text("ALTER TABLE alumnos ADD COLUMN IF NOT EXISTS credencial VARCHAR(64)"))
+        c.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_alumnos_credencial ON alumnos (credencial)"))
     with SessionLocal() as db:
         seed_base(db)
         db.commit()

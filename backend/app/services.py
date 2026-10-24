@@ -127,7 +127,7 @@ def alumno_dict(a: Alumno, foto: bool = False) -> dict:
         "direccion": a.direccion, "contacto_emergencia": a.contacto_emergencia,
         "telefono_emergencia": a.telefono_emergencia, "plantel_id": a.plantel_id,
         "plantel": a.plantel.nombre if a.plantel else None,
-        "fecha_inscripcion": a.fecha_inscripcion, "estado": a.estado,
+        "fecha_inscripcion": a.fecha_inscripcion, "estado": a.estado, "credencial": a.credencial,
     }
     if foto:
         d["foto"] = a.foto

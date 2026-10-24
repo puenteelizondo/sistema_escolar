@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from ..db import get_db
@@ -54,7 +54,8 @@ def _resp(resultado: str, mensaje: str, alumno: Alumno | None = None, curso: Cur
 @router.post("/entrada/escaneo")
 def escaneo(data: EscaneoIn, user: Usuario = Depends(require("asistencia.escanear")), db: Session = Depends(get_db)):
     codigo = re.sub(r"\s+", "", data.codigo).upper()
-    alumno = db.scalar(select(Alumno).where(Alumno.matricula == codigo))
+    # la credencial puede traer la matrícula (código de barras) o el número de su chip (RFID)
+    alumno = db.scalar(select(Alumno).where(or_(Alumno.matricula == codigo, Alumno.credencial == codigo)))
     if not alumno:
         return _resp("no_encontrado", "Credencial no reconocida. Avisa en recepción.")
     if alumno.estado == "baja":

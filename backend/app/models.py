@@ -84,6 +84,7 @@ class Alumno(Base):
     apellido_materno: Mapped[str | None] = mapped_column(String(80))
     nombre_completo: Mapped[str] = mapped_column(String(250), index=True)
     foto: Mapped[str | None] = mapped_column(Text, deferred=True)  # data URL (opcional); no se carga en listados
+    credencial: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)  # número del chip (RFID)
     fecha_nacimiento: Mapped[date | None] = mapped_column(Date)
     telefono: Mapped[str | None] = mapped_column(String(30))
     whatsapp: Mapped[str | None] = mapped_column(String(30))

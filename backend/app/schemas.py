@@ -122,6 +122,20 @@ class FotoIn(Base):
         return v or None
 
 
+class CredencialIn(Base):
+    credencial: str | None = None
+
+    @field_validator("credencial")
+    @classmethod
+    def _c(cls, v):
+        if not v:
+            return None
+        v = re.sub(r"\s+", "", v).upper()
+        if not re.fullmatch(r"[A-Z0-9:_\-]{3,64}", v):
+            raise ValueError("El número de credencial solo puede tener letras, números, guion y dos puntos (3 a 64)")
+        return v
+
+
 class MotivoIn(Base):
     motivo: str | None = None
 

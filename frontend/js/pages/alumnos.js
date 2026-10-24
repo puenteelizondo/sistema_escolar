@@ -8,6 +8,7 @@ import { planteles, ESTADOS_ALUMNO } from '../catalog.js';
 import { abrirPago } from '../cobro.js';
 import { verTicket, imprimirPorId, pdfURL } from '../ticket.js';
 import { abrirInscribir } from './cursos.js';
+import { verCredenciales } from '../credencial.js';
 
 const avatar = (a, cls = '') =>
   (a.foto || a.foto_url) ? html`<img class="avatar ${cls}" src="${a.foto || a.foto_url}" alt="" loading="lazy">` : html`<div class="avatar ${cls}">${initials(a.nombre_completo)}</div>`;
@@ -153,6 +154,7 @@ export async function expediente(root, ctx) {
         ${can('pagos.registrar') && a.estado !== 'baja' ? html`<a class="btn primary" href="#/cobro?m=${a.matricula}">Cobrar</a>` : ''}
         ${can('inscripciones.admin') && a.estado !== 'baja' ? html`<button class="btn" data-insc>Inscribir a curso</button>` : ''}
         ${can('alumnos.editar') ? html`<button class="btn" data-edit>Editar</button>` : ''}
+        <button class="btn" data-cred>🪪 Credencial</button>
         ${can('alumnos.baja') ? (a.estado === 'baja' ? html`<button class="btn" data-react>Reactivar</button>` : html`<button class="btn danger-o" data-baja>Dar de baja</button>`) : ''}
       </div>
     </section>
@@ -188,6 +190,7 @@ export async function expediente(root, ctx) {
 
   const refrescar = () => ctx.refrescar();
   on(root, 'click', '[data-edit]', () => formAlumno(a, refrescar));
+  on(root, 'click', '[data-cred]', () => abrirCredencial(a, activa, ctx.publica, refrescar));
   on(root, 'click', '[data-foto-exp]', async () => {
     const url = await capturarFoto(320);
     if (!url) return;
@@ -264,5 +267,50 @@ function editarMensualidad(m, onDone) {
     mod.close();
     toast('Cargo actualizado');
     onDone();
+  });
+}
+
+// ---------------------------------------------------------------- credencial (impresa y chip)
+function abrirCredencial(a, inscripciones, publica, refrescar) {
+  const insc = inscripciones.find((i) => i.estado === 'activa') || inscripciones[0];
+  const datos = {
+    matricula: a.matricula, nombre: a.nombre_completo, foto: a.foto,
+    curso: insc ? insc.curso : '', plantel: (insc && insc.plantel) || a.plantel, vigencia: insc ? insc.fecha_fin : null,
+  };
+  const escuela = { nombre: publica.escuela_nombre, logo: publica.logo };
+  const chip = can('alumnos.editar') ? html`<div class="chip-box">
+      <div><div class="cc-label">CREDENCIAL DE CHIP</div>
+        <div class="chip-num">${a.credencial ? html`<span class="mono">${a.credencial}</span>` : html`<span class="muted">Sin chip registrado</span>`}</div>
+        <small class="muted">El código de barras impreso siempre funciona. Registra el chip solo si usan tarjetas con chip.</small></div>
+      <div class="row-btns"><button type="button" class="btn sm" data-chip>${a.credencial ? 'Cambiar chip' : 'Registrar chip'}</button>
+        ${a.credencial ? html`<button type="button" class="btn sm danger-o" data-chip-quitar>Quitar</button>` : ''}</div>
+    </div>` : '';
+  const m = verCredenciales([datos], escuela, { titulo: `Credencial · ${a.matricula}`, extra: chip });
+  const reg = m.body.querySelector('[data-chip]');
+  if (reg) reg.addEventListener('click', () => { m.close(); registrarChip(a, refrescar); });
+  const q = m.body.querySelector('[data-chip-quitar]');
+  if (q) q.addEventListener('click', async () => {
+    try { await put(`/alumnos/${a.id}/credencial`, { credencial: null }); toast('Chip quitado'); m.close(); refrescar(); } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+function registrarChip(a, refrescar) {
+  const m = modal({
+    titulo: `Registrar chip · ${a.matricula}`, ancho: 'sm',
+    cuerpo: html`<form class="form chip-form">
+      <div class="chip-lector">🪪</div>
+      <p class="center"><b>Acerca la tarjeta de ${a.nombre_completo} al lector.</b><br>
+        <span class="muted">El número aparece solo. También puedes escribirlo a mano y pulsar Guardar.</span></p>
+      <input name="credencial" class="mono chip-input" autocomplete="off" placeholder="Número del chip" autofocus required>
+      <div class="form-error" hidden></div>
+      <div class="modal-actions"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary">GUARDAR</button></div>
+    </form>`,
+  });
+  const form = $('form', m.body);
+  enviarForm(form, async (d) => {
+    await put(`/alumnos/${a.id}/credencial`, { credencial: d.credencial });
+    m.close();
+    toast('Chip registrado. Ya puede pasar su tarjeta en la entrada.');
+    refrescar();
   });
 }

@@ -118,6 +118,20 @@ def detalle(cid: int, user: Usuario = Depends(require("cursos.ver")), db: Sessio
     }
 
 
+@router.get("/cursos/{cid}/credenciales")
+def credenciales_curso(cid: int, user: Usuario = Depends(require("alumnos.ver")), db: Session = Depends(get_db)):
+    """Datos para imprimir las credenciales de todos los alumnos activos del curso (incluye foto)."""
+    c = _curso_o_404(db, cid, user)
+    filas = db.execute(
+        select(Alumno.matricula, Alumno.nombre_completo, Alumno.foto, Inscripcion.plantel_id)
+        .join(Inscripcion, Inscripcion.alumno_id == Alumno.id)
+        .where(Inscripcion.curso_id == cid, Inscripcion.estado == "activa", Alumno.estado != "baja")
+        .order_by(Alumno.nombre_completo)).all()
+    plantel = c.plantel.nombre if c.plantel else None
+    return [{"matricula": m, "nombre": n, "foto": f, "curso": c.nombre, "plantel": plantel, "vigencia": c.fecha_fin}
+            for m, n, f, _ in filas]
+
+
 # ---------------------------------------------------------------- inscripciones
 @router.post("/cursos/{cid}/inscribir", status_code=201)
 def inscribir_alumno(cid: int, data: InscribirIn, user: Usuario = Depends(require("inscripciones.admin")),

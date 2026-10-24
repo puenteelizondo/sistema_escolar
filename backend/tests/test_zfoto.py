@@ -21,3 +21,18 @@ def test_foto_alumno(admin):
     assert item["foto_url"].startswith(f"/api/alumnos/{aid}/foto?v=") and "foto" not in item
     assert admin.put(f"/api/alumnos/{aid}/foto", json={"foto": None}).status_code == 200
     assert admin.get(f"/api/alumnos/{aid}/foto").status_code == 404
+
+
+def test_retiro_muestra_motivo(admin):
+    c = admin.post("/api/cursos", json={"nombre": "Curso retiro", "codigo": "RET-1", "area": "Otro",
+                                        "fecha_inicio": "2026-01-01", "fecha_fin": "2026-12-31", "cupo_maximo": 5,
+                                        "costo_inscripcion": 0, "costo_mensualidad": 100, "num_mensualidades": 2,
+                                        "estado": "activo"}).json()
+    a = admin.post("/api/alumnos", json={"nombre": "Retiro", "apellido_paterno": "Prueba"}).json()
+    i = admin.post(f"/api/cursos/{c['id']}/inscribir", json={"alumno_id": a["id"]})
+    assert i.status_code in (200, 201), i.text
+    iid = i.json()["id"]
+    assert admin.post(f"/api/inscripciones/{iid}/retirar", json={"motivo": "Cambió de horario"}).status_code == 200
+    exp = admin.get(f"/api/alumnos/{a['id']}/expediente").json()
+    ins = exp["inscripciones"][0]
+    assert ins["estado"] == "retirada" and ins["retiro_motivo"] == "Cambió de horario" and ins["fecha_retiro"]

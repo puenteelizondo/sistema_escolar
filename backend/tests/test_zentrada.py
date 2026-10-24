@@ -81,3 +81,29 @@ def test_fuera_de_horario_y_otros_casos(lector, monkeypatch):
     assert c.post("/api/entrada/escaneo", json={"codigo": "ZT0001"}).json()["resultado"] == "sin_clase"  # ya terminó
     assert c.post("/api/entrada/escaneo", json={"codigo": "ZT0004"}).json()["resultado"] == "sin_clase"  # sin cursos
     assert c.post("/api/entrada/escaneo", json={"codigo": "NOEXISTE"}).json()["resultado"] == "no_encontrado"
+
+
+def test_credencial_de_chip(admin, lector, monkeypatch):
+    c, ids = lector
+    aid = next(a["id"] for a in admin.get("/api/alumnos", params={"q": "ZT0001"}).json()["items"] if a["matricula"] == "ZT0001")
+    otro = next(a["id"] for a in admin.get("/api/alumnos", params={"q": "ZT0004"}).json()["items"] if a["matricula"] == "ZT0004")
+    assert admin.put(f"/api/alumnos/{aid}/credencial", json={"credencial": "a1"}).status_code == 422
+    assert admin.put(f"/api/alumnos/{aid}/credencial", json={"credencial": " 0012 345 678 "}).json()["credencial"] == "0012345678"
+    # no se puede repetir en otro alumno ni usar la matrícula de otro
+    assert admin.put(f"/api/alumnos/{otro}/credencial", json={"credencial": "0012345678"}).status_code == 409
+    assert admin.put(f"/api/alumnos/{otro}/credencial", json={"credencial": "ZT0002"}).status_code == 409
+    assert admin.get(f"/api/alumnos/{aid}").json()["credencial"] == "0012345678"
+    # el lector manda el número del chip y se registra la asistencia de ese alumno
+    monkeypatch.setattr(entrada, "ahora", _a("09:02"))
+    r = c.post("/api/entrada/escaneo", json={"codigo": "0012345678"}).json()
+    assert r["resultado"] in ("ok", "ya_registrada") and r["alumno"]["matricula"] == "ZT0001"
+    # quitar
+    assert admin.put(f"/api/alumnos/{aid}/credencial", json={"credencial": None}).json()["credencial"] is None
+    assert c.post("/api/entrada/escaneo", json={"codigo": "0012345678"}).json()["resultado"] == "no_encontrado"
+
+
+def test_credenciales_del_curso(admin, lector):
+    _, ids = lector
+    lista = admin.get(f"/api/cursos/{ids['ENT-1']}/credenciales").json()
+    assert {x["matricula"] for x in lista} == {"ZT0001", "ZT0002"}
+    assert all(x["curso"] == "Curso Mañana" and "foto" in x and x["vigencia"] for x in lista)
