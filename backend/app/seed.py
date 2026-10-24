@@ -9,7 +9,7 @@ from .config import ADMIN_PASSWORD, ADMIN_USER
 from .models import (
     Alumno, Asistencia, Configuracion, Curso, Evento, Inscripcion, Instructor, Mensualidad, Plantel, Rol, Usuario,
 )
-from .permisos import ROLES_BASE
+from .permisos import PERMISOS_NUEVOS, ROLES_BASE
 from .security import hash_password
 from .services import DEFAULT_CONFIG, cfg_set, inscribir, registrar_pago, log
 from .utils import add_months, hoy
@@ -26,6 +26,15 @@ def seed_base(db: Session):
             rol.permisos = d["permisos"]  # el administrador siempre tiene todo
     db.flush()
     existentes = {c.clave for c in db.scalars(select(Configuracion))}
+    for perm, roles in PERMISOS_NUEVOS.items():
+        clave = f"perm_otorgado:{perm}"
+        if clave in existentes:
+            continue
+        for rol in db.scalars(select(Rol).where(Rol.nombre.in_(roles))):
+            if perm not in (rol.permisos or []):
+                rol.permisos = [*(rol.permisos or []), perm]
+        db.add(Configuracion(clave=clave, valor="1"))
+        existentes.add(clave)
     for k, v in DEFAULT_CONFIG.items():
         if k not in existentes:
             db.add(Configuracion(clave=k, valor=v))

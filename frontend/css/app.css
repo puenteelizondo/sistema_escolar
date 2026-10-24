@@ -717,3 +717,23 @@ body.kiosko #view { padding: 0 !important; }
 @media (max-width: 640px) {
   .cred-prev, .modal.m-lg .cred-prev { zoom: 1; }
 }
+
+/* ----- respaldos ----- */
+.resp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; margin-bottom: 10px; }
+.resp-card { border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #fff; border-top: 5px solid var(--brand); }
+.resp-card.resp-peligro { border-top-color: var(--rojo); }
+.resp-card h3 { margin: 0; font-size: 1.12rem; }
+.resp-card p { margin: 0; }
+.resp-card .btn.block { margin-top: auto; }
+.resp-ico { font-size: 1.8rem; }
+.resp-ult { padding: 8px 12px; background: var(--brand-l); border-radius: 10px; color: var(--brand-d); font-size: .92rem; }
+.resp-file { display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; border: 2px dashed var(--line2); border-radius: 12px; cursor: pointer; color: var(--muted); font-weight: 600; word-break: break-all; }
+.resp-file:hover { border-color: var(--brand); color: var(--brand); }
+.resp-file input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.resp-info { padding: 10px 12px; border-radius: 10px; background: var(--verde-bg); color: var(--verde-t); font-size: .92rem; }
+.resp-info.err { background: var(--rojo-bg); color: var(--rojo-t); }
+.resp-nota { font-size: .88rem; margin: 6px 0 16px; }
+.resp-servidor { margin-top: 8px; }
+.resp-servidor summary { cursor: pointer; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+.resp-espera { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 18px 6px; }
+.resp-espera.ok b { font-size: 1.15rem; color: var(--verde-t); }

@@ -111,7 +111,7 @@ export async function cursoDetalle(root, ctx) {
       <div class="exp-btns">
         ${can('inscripciones.admin') && !['cancelado', 'terminado'].includes(c.estado) ? html`<button class="btn primary" data-insc>Inscribir alumno</button>` : ''}
         ${can('asistencia.registrar') || can('asistencia.ver') ? html`<a class="btn" href="#/asistencia?curso=${c.id}">Asistencia</a>` : ''}
-        ${can('alumnos.ver') && activos.length ? html`<button class="btn" data-creds>🪪 Credenciales</button>` : ''}
+        ${can('credenciales.imprimir') && activos.length ? html`<button class="btn" data-creds>🪪 Credenciales</button>` : ''}
         ${can('cursos.admin') ? html`<button class="btn" data-edit>Editar</button>` : ''}
         ${can('cursos.admin') && c.estado !== 'cancelado' ? html`<button class="btn danger-o" data-cancelar>Cancelar curso</button>` : ''}
         ${can('cursos.admin') && !c.alumnos.length ? html`<button class="btn danger-o" data-eliminar>Eliminar</button>` : ''}

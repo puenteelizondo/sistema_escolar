@@ -107,3 +107,12 @@ def test_credenciales_del_curso(admin, lector):
     lista = admin.get(f"/api/cursos/{ids['ENT-1']}/credenciales").json()
     assert {x["matricula"] for x in lista} == {"ZT0001", "ZT0002"}
     assert all(x["curso"] == "Curso Mañana" and "foto" in x and x["vigencia"] for x in lista)
+
+
+def test_permiso_imprimir_credenciales(admin, lector):
+    _, ids = lector
+    roles = {r["nombre"]: r for r in admin.get("/api/roles").json()["roles"]}
+    assert "credenciales.imprimir" in roles["recepcion"]["permisos"]
+    assert "credenciales.imprimir" not in roles["instructor"]["permisos"]
+    c, _ = lector  # usuario "entrada": no puede imprimir credenciales
+    assert c.get(f"/api/cursos/{ids['ENT-1']}/credenciales").status_code == 403

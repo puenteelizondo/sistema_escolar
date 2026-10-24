@@ -119,7 +119,7 @@ def detalle(cid: int, user: Usuario = Depends(require("cursos.ver")), db: Sessio
 
 
 @router.get("/cursos/{cid}/credenciales")
-def credenciales_curso(cid: int, user: Usuario = Depends(require("alumnos.ver")), db: Session = Depends(get_db)):
+def credenciales_curso(cid: int, user: Usuario = Depends(require("credenciales.imprimir")), db: Session = Depends(get_db)):
     """Datos para imprimir las credenciales de todos los alumnos activos del curso (incluye foto)."""
     c = _curso_o_404(db, cid, user)
     filas = db.execute(

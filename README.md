@@ -85,3 +85,14 @@ Los alumnos de ejemplo cubren cada caso: al corriente, con abono, vencidos, con 
 
 Para borrar los alumnos de prueba y volver a cargar los ejemplos, sin perder usuarios, cursos ni configuración,
 ejecuta `reiniciar-ejemplos.bat` (o `docker compose exec backend python -m app.reset_demo --si`). El número de ticket vuelve a 1.
+
+## Respaldo y restauración (solo administrador)
+
+En **Configuración → Respaldos**:
+
+- **Descargar respaldo**: baja un archivo `respaldo-escuela-AAAA-MM-DD-HHMM.json.gz` con toda la información
+  (alumnos con fotos, cursos, pagos, tickets, asistencia, usuarios, configuración y bitácora). Guárdalo fuera del servidor.
+- **Restaurar desde un respaldo**: elige el archivo, escribe `RESTAURAR` y confirma. Se reemplaza toda la información
+  por la del archivo (si algo falla no se cambia nada) y la página se reinicia para volver a iniciar sesión.
+
+Sirve para mudar el sistema a otro servidor: instala el sistema nuevo, entra con el administrador inicial y restaura el archivo.

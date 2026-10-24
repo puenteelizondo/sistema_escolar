@@ -154,7 +154,7 @@ export async function expediente(root, ctx) {
         ${can('pagos.registrar') && a.estado !== 'baja' ? html`<a class="btn primary" href="#/cobro?m=${a.matricula}">Cobrar</a>` : ''}
         ${can('inscripciones.admin') && a.estado !== 'baja' ? html`<button class="btn" data-insc>Inscribir a curso</button>` : ''}
         ${can('alumnos.editar') ? html`<button class="btn" data-edit>Editar</button>` : ''}
-        <button class="btn" data-cred>🪪 Credencial</button>
+        ${can('credenciales.imprimir') || can('alumnos.editar') ? html`<button class="btn" data-cred>🪪 Credencial</button>` : ''}
         ${can('alumnos.baja') ? (a.estado === 'baja' ? html`<button class="btn" data-react>Reactivar</button>` : html`<button class="btn danger-o" data-baja>Dar de baja</button>`) : ''}
       </div>
     </section>
@@ -285,7 +285,9 @@ function abrirCredencial(a, inscripciones, publica, refrescar) {
       <div class="row-btns"><button type="button" class="btn sm" data-chip>${a.credencial ? 'Cambiar chip' : 'Registrar chip'}</button>
         ${a.credencial ? html`<button type="button" class="btn sm danger-o" data-chip-quitar>Quitar</button>` : ''}</div>
     </div>` : '';
-  const m = verCredenciales([datos], escuela, { titulo: `Credencial · ${a.matricula}`, extra: chip });
+  const m = can('credenciales.imprimir')
+    ? verCredenciales([datos], escuela, { titulo: `Credencial · ${a.matricula}`, extra: chip })
+    : modal({ titulo: `Credencial · ${a.matricula}`, ancho: 'md', cuerpo: html`${chip}<div class="modal-actions"><button type="button" class="btn" data-close>Cerrar</button></div>` });
   const reg = m.body.querySelector('[data-chip]');
   if (reg) reg.addEventListener('click', () => { m.close(); registrarChip(a, refrescar); });
   const q = m.body.querySelector('[data-chip-quitar]');

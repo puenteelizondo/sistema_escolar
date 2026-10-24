@@ -1,7 +1,8 @@
 import { get, put, post, url } from '../api.js';
+import { isAdmin } from '../state.js';
 import {
   html, raw, setHTML, $, $$, on, debounce, toast, campo, selector, areaTexto, tabla, fdatetime, spinner,
-  imagenADataURL, hoyISO,
+  imagenADataURL, hoyISO, modal, descargar, fdate,
 } from '../ui.js';
 import { can } from '../state.js';
 import { ticketPreview } from '../ticket.js';
@@ -130,23 +131,96 @@ export async function configuracion(root, ctx) {
   async function vistaRespaldos() {
     setHTML(cuerpo, spinner());
     const r = await get('/respaldos');
-    setHTML(cuerpo, html`<div class="resp-top">
-      <div><b>Último respaldo:</b> ${r.ultimo ? fdatetime(r.ultimo) : 'todavía no se ha hecho ninguno'}</div>
-      <button class="btn primary lg" data-crear>CREAR RESPALDO AHORA</button></div>
-      ${tabla([
-        { label: 'Archivo', render: (x) => html`<span class="mono">${x.nombre}</span>` },
-        { label: 'Fecha', render: (x) => fdatetime(x.fecha) },
-        { label: 'Tamaño', cls: 'num', render: (x) => fmtBytes(x.tamano) },
-        { label: '', cls: 'acc', render: (x) => html`<a class="btn sm" href="${url('/respaldos/' + x.nombre)}">Descargar</a>` },
-      ], r.items, { vacio: 'No hay respaldos todavía.' })}
-      <p class="muted">Los respaldos se guardan en el servidor (volumen «backups» de Docker). Descarga una copia y guárdala fuera de esta computadora (USB, nube).
-        Para restaurar consulta el archivo README.</p>`);
+    setHTML(cuerpo, html`${isAdmin() ? html`<div class="resp-grid">
+        <section class="resp-card">
+          <div class="resp-ico">⬇️</div>
+          <h3>Descargar respaldo completo</h3>
+          <p class="muted">Un solo archivo con <b>toda</b> la información: alumnos y fotos, cursos, pagos, tickets, asistencia, usuarios y configuración.
+            Guárdalo fuera del servidor (USB, Google Drive, correo). Si algún día se pierde el servidor, con este archivo se recupera todo.</p>
+          <div class="resp-ult">Último respaldo: <b>${r.ultimo ? fdatetime(r.ultimo) : 'nunca'}</b></div>
+          <button class="btn primary lg block" data-descargar>DESCARGAR RESPALDO</button>
+        </section>
+        <section class="resp-card resp-peligro">
+          <div class="resp-ico">⬆️</div>
+          <h3>Restaurar desde un respaldo</h3>
+          <p class="muted">Carga un archivo de respaldo. <b>Toda la información actual se reemplaza</b> por la del archivo.
+            Al terminar la página se reinicia y se vuelve a iniciar sesión.</p>
+          <label class="resp-file"><input type="file" accept=".gz,.json,application/gzip,application/json" data-archivo>
+            <span data-archivo-nombre>Elegir archivo de respaldo…</span></label>
+          <div class="resp-info" data-info hidden></div>
+          <button class="btn danger lg block" data-restaurar disabled>RESTAURAR INFORMACIÓN</button>
+        </section>
+      </div>
+      <p class="muted resp-nota">Recomendación: descarga un respaldo cada semana y antes de cualquier cambio importante. Solo el administrador ve esta sección.</p>` : ''}
+      <details class="resp-servidor" ${raw(isAdmin() ? '' : 'open')}><summary>Copias guardadas en el servidor (${r.items.length})</summary>
+        <div class="resp-top"><span class="muted">Copias internas del servidor. En Render no se conservan; usa "Descargar respaldo".</span>
+          <button class="btn" data-crear>Crear copia en el servidor</button></div>
+        ${tabla([
+          { label: 'Archivo', render: (x) => html`<span class="mono">${x.nombre}</span>` },
+          { label: 'Fecha', render: (x) => fdatetime(x.fecha) },
+          { label: 'Tamaño', cls: 'num', render: (x) => fmtBytes(x.tamano) },
+          { label: '', cls: 'acc', render: (x) => html`<a class="btn sm" href="${url('/respaldos/' + x.nombre)}">Descargar</a>` },
+        ], r.items, { vacio: 'No hay copias en el servidor.' })}
+      </details>`);
+    if (isAdmin()) prepararRestaurar();
   }
   on(root, 'click', '[data-crear]', async (e, el) => {
     el.disabled = true;
-    try { const r = await post('/respaldos'); toast(`Respaldo creado (${fmtBytes(r.tamano)})`); await vistaRespaldos(); } catch (er) { toast(er.message, 'error'); el.disabled = false; }
+    try { const r = await post('/respaldos'); toast(`Copia creada (${fmtBytes(r.tamano)})`); await vistaRespaldos(); } catch (er) { toast(er.message, 'error'); el.disabled = false; }
+  });
+  on(root, 'click', '[data-descargar]', (e, el) => {
+    descargar(url('/respaldos/archivo'));
+    toast('Generando respaldo… se descargará en unos segundos');
+    el.disabled = true;
+    setTimeout(() => { vistaRespaldos(); }, 4000);
   });
 
+  function prepararRestaurar() {
+    let archivo = null;
+    const inp = $('[data-archivo]', cuerpo), info = $('[data-info]', cuerpo), btn = $('[data-restaurar]', cuerpo);
+    inp.addEventListener('change', async () => {
+      archivo = inp.files[0] || null;
+      btn.disabled = true;
+      $('[data-archivo-nombre]', cuerpo).textContent = archivo ? `${archivo.name} · ${fmtBytes(archivo.size)}` : 'Elegir archivo de respaldo…';
+      if (!archivo) { info.hidden = true; return; }
+      info.hidden = false;
+      setHTML(info, html`<span class="muted">Revisando el archivo…</span>`);
+      try {
+        const d = await leerResumen(archivo);
+        const n = d.conteos || {};
+        setHTML(info, html`<b>Respaldo válido</b> · del ${fdatetime(d.fecha)}${d.escuela ? html` · ${d.escuela}` : ''}<br>
+          ${n.alumnos || 0} alumnos · ${n.cursos || 0} cursos · ${n.pagos || 0} pagos · ${n.usuarios || 0} usuarios`);
+        info.classList.remove('err');
+        btn.disabled = false;
+      } catch (er) {
+        info.classList.add('err');
+        setHTML(info, html`<b>No se puede usar:</b> ${er.message}`);
+      }
+    });
+    btn.addEventListener('click', async () => {
+      if (!archivo || !(await confirmarRestaurar())) return;
+      const espera = modal({ titulo: '', cerrable: false, ancho: 'sm',
+        cuerpo: html`<div class="resp-espera"><div class="spin"></div><b>Restaurando la información…</b><span class="muted">No cierres ni recargues esta página.</span></div>` });
+      try {
+        const fd = new FormData();
+        fd.append('archivo', archivo, archivo.name);
+        const res = await fetch('/api/respaldos/restaurar', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+        setHTML(espera.body, html`<div class="resp-espera ok"><div class="resp-ico">✅</div><b>Información restaurada</b>
+          <span>${data.alumnos} alumnos · ${data.cursos} cursos · ${data.pagos} pagos</span>
+          <span class="muted">La página se reiniciará para que vuelvas a iniciar sesión…</span></div>`);
+        setTimeout(async () => {
+          try { await post('/auth/logout'); } catch { /* la sesión puede no existir ya */ }
+          location.hash = '';
+          location.reload();
+        }, 3000);
+      } catch (er) {
+        espera.close();
+        toast(er.message, 'error');
+      }
+    });
+  }
   // ------------------------------------------------ actividad
   async function vistaActividad() {
     const f = { q: '', accion: '', usuario: '', desde: '', hasta: '' };
@@ -179,4 +253,42 @@ export async function configuracion(root, ctx) {
   };
   on(root, 'click', '[data-tab]', (e, el) => { tab = el.dataset.tab; abrir(); });
   abrir();
+}
+
+/** Lee el encabezado del respaldo en el navegador (sin subirlo) para mostrar qué contiene. */
+async function leerResumen(file) {
+  let texto;
+  try {
+    const cab = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+    if (cab[0] === 0x1f && cab[1] === 0x8b) {
+      if (!('DecompressionStream' in window)) return { fecha: null, conteos: {} };
+      texto = await new Response(file.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    } else {
+      texto = await file.text();
+    }
+  } catch { throw new Error('el archivo está dañado o incompleto'); }
+  let d;
+  try { d = JSON.parse(texto); } catch { throw new Error('no es un respaldo del sistema'); }
+  if (!d || d.formato !== 'sistema-escolar-respaldo' || !d.tablas) throw new Error('no es un respaldo del sistema');
+  return { fecha: d.fecha, escuela: d.escuela, conteos: d.conteos || {} };
+}
+
+function confirmarRestaurar() {
+  return new Promise((resolve) => {
+    let listo = false;
+    const fin = (v) => { if (!listo) { listo = true; resolve(v); } };
+    const m = modal({
+      titulo: '¿Reemplazar toda la información?', ancho: 'sm', onClose: () => fin(false),
+      cuerpo: html`<form class="form">
+        <p>Se borrará <b>todo</b> lo que hay ahora (alumnos, pagos, asistencia, usuarios…) y se cargará lo del respaldo.
+          Lo que se haya registrado después de ese respaldo se perderá.</p>
+        <p class="muted">Si no estás seguro, primero descarga un respaldo de lo que hay ahora.</p>
+        <label class="field"><span>Escribe RESTAURAR para confirmar</span><input name="t" autocomplete="off" autofocus></label>
+        <div class="modal-actions"><button type="button" class="btn" data-close>Cancelar</button>
+          <button class="btn danger" disabled>Sí, restaurar</button></div></form>`,
+    });
+    const f = m.body.querySelector('form'), b = f.querySelector('button.danger');
+    f.t.addEventListener('input', () => { b.disabled = f.t.value.trim().toUpperCase() !== 'RESTAURAR'; });
+    f.addEventListener('submit', (e) => { e.preventDefault(); if (!b.disabled) { fin(true); m.close(); } });
+  });
 }

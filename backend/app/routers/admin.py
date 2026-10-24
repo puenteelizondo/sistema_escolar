@@ -4,8 +4,8 @@ import re
 import subprocess
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from ..config import BACKUP_DIR, DATABASE_URL
 from ..db import get_db
 from ..models import Log, Ticket, Usuario
-from ..security import require
+from .. import respaldo_archivo
+from ..security import require, solo_admin
 from ..services import DEFAULT_CONFIG, cfg_all, cfg_get, cfg_set, log
 from ..utils import ahora, dt_local
 
@@ -135,6 +136,42 @@ def crear_respaldo(user: Usuario = Depends(require("respaldos.admin")), db: Sess
     log(db, user, "crear_respaldo", "respaldo", None, nombre)
     db.commit()
     return {"nombre": nombre, "tamano": os.path.getsize(destino)}
+
+
+@router.get("/respaldos/archivo")
+def descargar_respaldo_completo(user: Usuario = Depends(solo_admin), db: Session = Depends(get_db)):
+    """Genera y descarga un respaldo completo (un solo archivo) para guardarlo fuera del servidor."""
+    cfg_set(db, "ultimo_respaldo", ahora().isoformat())
+    log(db, user, "descargar_respaldo_completo", "respaldo", None, "archivo completo")
+    db.commit()
+    contenido = respaldo_archivo.exportar(db, cfg_get(db, "escuela_nombre"))
+    nombre = f"respaldo-escuela-{ahora().strftime('%Y-%m-%d-%H%M')}.json.gz"
+    return Response(contenido, media_type="application/gzip",
+                    headers={"Content-Disposition": f'attachment; filename="{nombre}"', "Cache-Control": "no-store"})
+
+
+@router.post("/respaldos/restaurar")
+async def restaurar_respaldo(archivo: UploadFile = File(...), user: Usuario = Depends(solo_admin),
+                             db: Session = Depends(get_db)):
+    """Reemplaza TODA la información por la del archivo. Si algo falla no se cambia nada."""
+    contenido = await archivo.read(respaldo_archivo.MAX_BYTES + 1)
+    try:
+        doc = respaldo_archivo.leer(contenido)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    quien = user.username
+    try:
+        conteos = respaldo_archivo.restaurar(db, doc)
+        from ..seed import seed_base  # roles, configuración y administrador inicial siempre presentes
+        seed_base(db)
+        log(db, None, "restaurar_respaldo", "respaldo", None,
+            f"por {quien} · archivo {archivo.filename or ''} · del {str(doc.get('fecha') or '')[:16]}")
+        db.commit()
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        raise HTTPException(400, f"No se pudo restaurar; no se cambió nada. Detalle: {str(e)[:200]}")
+    return {"ok": True, "fecha_respaldo": doc.get("fecha"), "escuela": doc.get("escuela"),
+            "alumnos": conteos.get("alumnos", 0), "pagos": conteos.get("pagos", 0), "cursos": conteos.get("cursos", 0)}
 
 
 @router.get("/respaldos/{nombre}")

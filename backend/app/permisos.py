@@ -15,6 +15,7 @@ PERMISOS = {
     "mensualidades.editar": "Cambiar fechas e importes de mensualidades",
     "tickets.ver": "Ver historial de tickets",
     "tickets.imprimir": "Imprimir / reimprimir tickets",
+    "credenciales.imprimir": "Imprimir credenciales de alumnos",
     "asistencia.ver": "Consultar asistencia",
     "asistencia.registrar": "Registrar asistencia",
     "asistencia.escanear": "Usar el lector de credenciales en la entrada",
@@ -36,7 +37,7 @@ ROLES_BASE = {
         "etiqueta": "Recepción / Cajero",
         "permisos": [
             "alumnos.ver", "alumnos.crear", "cursos.ver", "pagos.ver",
-            "pagos.registrar", "tickets.ver", "tickets.imprimir", "calendario.ver",
+            "pagos.registrar", "tickets.ver", "tickets.imprimir", "calendario.ver", "credenciales.imprimir",
         ],
     },
     "instructor": {
@@ -50,4 +51,10 @@ ROLES_BASE = {
         "etiqueta": "Entrada / Lector de credenciales",
         "permisos": ["asistencia.escanear"],
     },
+}
+
+# Permisos agregados en versiones nuevas: se otorgan UNA sola vez a estos roles en bases ya existentes
+# (si después el administrador los quita, no se vuelven a poner).
+PERMISOS_NUEVOS = {
+    "credenciales.imprimir": ["recepcion"],
 }

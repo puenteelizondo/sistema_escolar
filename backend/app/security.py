@@ -57,6 +57,13 @@ def require(*permisos: str):
     return dep
 
 
+def solo_admin(user: Usuario = Depends(get_current_user)) -> Usuario:
+    """Dependencia: únicamente el rol administrador (no se puede delegar con permisos)."""
+    if user.rol.nombre != "administrador":
+        raise HTTPException(403, "Solo el administrador puede hacer esto")
+    return user
+
+
 # --- límite simple de intentos de login (en memoria) -----------------------
 _intentos: dict[str, list[float]] = defaultdict(list)
 MAX_INTENTOS = 6
