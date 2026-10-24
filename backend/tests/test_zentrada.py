@@ -116,3 +116,11 @@ def test_permiso_imprimir_credenciales(admin, lector):
     assert "credenciales.imprimir" not in roles["instructor"]["permisos"]
     c, _ = lector  # usuario "entrada": no puede imprimir credenciales
     assert c.get(f"/api/cursos/{ids['ENT-1']}/credenciales").status_code == 403
+
+
+def test_reverso_credencial(admin, lector):
+    c, _ = lector  # usuario "entrada" no tiene permiso de imprimir
+    assert c.get("/api/credencial/reverso").status_code == 403
+    admin.put("/api/config", json={"telefono": "312 312 4138"})
+    r = admin.get("/api/credencial/reverso").json()
+    assert r["telefono"] == "312 312 4138" and "intransferible" in r["credencial_reglas"] and r["credencial_devolver"]

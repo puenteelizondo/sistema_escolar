@@ -33,6 +33,9 @@ DEFAULT_CONFIG = {
     "dias_aviso": "5",
     "entrada_antes_min": "60",      # el lector acepta alumnos desde X min antes de la clase
     "entrada_tolerancia_min": "10",  # pasada la tolerancia, la llegada cuenta como retardo
+    "credencial_reglas": "Esta credencial es personal e intransferible.\nPreséntala al entrar al plantel y al pagar en caja.\n"
+                         "En caso de extravío avisa en recepción; la reposición tiene costo.",
+    "credencial_devolver": "Si encuentras esta credencial, por favor devuélvela a la escuela o llámanos.",
     "ultimo_respaldo": "",
 }
 

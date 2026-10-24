@@ -29,6 +29,14 @@ def config_publica(db: Session = Depends(get_db)):
     return {"escuela_nombre": cfg_get(db, "escuela_nombre"), "logo": cfg_get(db, "logo")}
 
 
+@router.get("/credencial/reverso")
+def credencial_reverso(user: Usuario = Depends(require("credenciales.imprimir")), db: Session = Depends(get_db)):
+    """Datos del reverso de la credencial (igual para todos los alumnos)."""
+    c = cfg_all(db)
+    return {k: c.get(k, "") for k in ("escuela_nombre", "logo", "direccion", "telefono", "whatsapp", "correo",
+                                     "credencial_reglas", "credencial_devolver")}
+
+
 @router.get("/config")
 def ver_config(user: Usuario = Depends(require("config.admin")), db: Session = Depends(get_db)):
     c = cfg_all(db)

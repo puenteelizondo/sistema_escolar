@@ -46,6 +46,9 @@ export async function configuracion(root, ctx) {
         ${campo('WhatsApp', 'whatsapp', cfg.whatsapp, { tipo: 'tel' })}
         ${campo('Correo', 'correo', cfg.correo, { tipo: 'email' })}
         ${areaTexto('Datos fiscales (RFC, razón social…)', 'datos_fiscales', cfg.datos_fiscales, { clase: 'span2', filas: 3 })}
+        <div class="span2 cfg-sub">Reverso de la credencial <small class="muted">(igual para todos; usa también la dirección, teléfono, WhatsApp y correo de arriba)</small></div>
+        ${areaTexto('Reglas (una por renglón, máximo 4)', 'credencial_reglas', cfg.credencial_reglas, { clase: 'span2', filas: 4 })}
+        ${campo('Texto "si la encuentras…"', 'credencial_devolver', cfg.credencial_devolver, { clase: 'span2', attrs: 'maxlength="110"' })}
       </div>
       <div class="logo-box"><div class="logo-prev" data-logo-prev>${cfg.logo ? html`<img src="${cfg.logo}" alt="Logo">` : html`<span class="muted">Sin logo</span>`}</div>
         <div><label class="btn">Subir logo (PNG o JPG)<input type="file" accept="image/png,image/jpeg" hidden data-logo></label>
@@ -65,7 +68,7 @@ export async function configuracion(root, ctx) {
     on(f, 'click', '[data-quitar-logo]', () => { logo = ''; setHTML($('[data-logo-prev]', f), html`<span class="muted">Sin logo</span>`); });
     f.addEventListener('submit', (e) => {
       e.preventDefault();
-      const d = Object.fromEntries(['escuela_nombre', 'direccion', 'telefono', 'whatsapp', 'correo', 'datos_fiscales'].map((k) => [k, f[k].value.trim()]));
+      const d = Object.fromEntries(['escuela_nombre', 'direccion', 'telefono', 'whatsapp', 'correo', 'datos_fiscales', 'credencial_reglas', 'credencial_devolver'].map((k) => [k, f[k].value.trim()]));
       guardar({ ...d, logo }, () => toast('Recarga la página para ver el nuevo nombre/logo en el menú', 'info', 5000));
     });
   }

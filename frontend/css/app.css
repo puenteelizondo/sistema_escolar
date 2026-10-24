@@ -737,3 +737,10 @@ body.kiosko #view { padding: 0 !important; }
 .resp-servidor summary { cursor: pointer; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
 .resp-espera { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 18px 6px; }
 .resp-espera.ok b { font-size: 1.15rem; color: var(--verde-t); }
+.cred-lados { display: grid; gap: 10px; }
+.cred-lado-t { font-weight: 800; font-size: .82rem; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); text-align: center; }
+.cred-lado .cred-prev-lista { padding-bottom: 8px; }
+.modal.m-lg .cred-lado:first-child .cred-prev-lista { max-height: 44vh; }
+.cargando-rev { width: 85.6mm; height: 54mm; background: linear-gradient(90deg, #eef2f8, #f8fafd, #eef2f8); background-size: 200% 100%; animation: brillo 1.2s infinite; }
+@keyframes brillo { to { background-position: -200% 0; } }
+.cfg-sub { margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 800; }
