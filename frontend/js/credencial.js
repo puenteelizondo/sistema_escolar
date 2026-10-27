@@ -66,7 +66,7 @@ function fondoSVG(reverso = false) {
 }
 
 export const ESTILO_CRED = `
-  .cred{position:relative;width:85.6mm;height:54mm;overflow:hidden;background:#0d1f52;color:#fff;font-family:Arial,Helvetica,sans-serif;
+  .cred{position:relative;width:86mm;height:54mm;overflow:hidden;background:#0d1f52;color:#fff;font-family:Arial,Helvetica,sans-serif;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
   .cred *{box-sizing:border-box}
   .cred .c-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -170,7 +170,7 @@ async function imprimirTarjetas(tarjetasHTML) {
   const tarjetas = tarjetasHTML.map((t) => `<div class="hoja">${t}</div>`).join('');
   doc.open();
   doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>Credenciales</title><style>
-    @page{size:85.6mm 54mm;margin:0}
+    @page{size:86mm 54mm;margin:0}
     html,body{margin:0;padding:0;background:#fff}
     .hoja{width:85.6mm;height:54mm;overflow:hidden;page-break-after:always;break-after:page}
     .hoja:last-child{page-break-after:auto;break-after:auto}
