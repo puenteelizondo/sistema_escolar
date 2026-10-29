@@ -214,14 +214,18 @@ async function dibujarReverso(a, e) {
   const nt = parrafo(ctx, 'REGLAMENTOS Y TÉRMINOS DEL ESTUDIANTE', x, y, { mm: 2.0, peso: 700, color: '#2b2f3a', max: 40, lineas: 2, alto: 2.5 });
   y += (nt - 1) * 2.5 + 3.0;
   const reglas = String(e.credencial_reglas || '').split(/\n+/).map((r) => r.trim()).filter(Boolean).slice(0, 4);
+  // que quepan todas las reglas: si no, se usa una letra un poco más chica
+  const limite = 31.2, ancho = 37.2;
+  let tam = 1.75;
+  const altoDe = (mm) => reglas.reduce((s, r) => s + renglones(ctx, r, ancho, 2, mm, 400).length * mm * 1.24 + 0.15, 0);
+  while (tam > 1.45 && y + altoDe(tam) - tam * 1.24 > limite) tam -= 0.05;
   reglas.forEach((r, i) => {
-    if (y > 29.5) return;
-    texto(ctx, `${i + 1}.`, x + 1.6, y, { mm: 1.75, color: '#2e3442' });
-    const n = parrafo(ctx, r, x + 4.2, y, { mm: 1.75, color: '#2e3442', max: 35.6, lineas: 2, alto: 2.2 });
-    y += n * 2.2 + 0.15;
+    texto(ctx, `${i + 1}.`, x + 1.4, y, { mm: tam, color: '#2e3442' });
+    const n = parrafo(ctx, r, x + 4.0, y, { mm: tam, color: '#2e3442', max: ancho, lineas: 2, alto: tam * 1.24 });
+    y += n * tam * 1.24 + 0.15;
   });
 
-  if (logo) imagenContiene(ctx, logo, 50, 10.4, 29.5, 17.5);
+  if (logo) imagenContiene(ctx, logo, 51.6, 10.4, 28.4, 17.5);
 
   // contacto de la escuela
   y = Math.max(y + 1.6, 33.2);
