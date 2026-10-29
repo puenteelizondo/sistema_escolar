@@ -121,7 +121,8 @@ def crear(data: AlumnoIn, user: Usuario = Depends(require("alumnos.crear")), db:
         apellido_materno=data.apellido_materno, nombre_completo=_norm_nombre(data), foto=data.foto,
         fecha_nacimiento=data.fecha_nacimiento, telefono=data.telefono, whatsapp=data.whatsapp,
         correo=data.correo, direccion=data.direccion, contacto_emergencia=data.contacto_emergencia,
-        telefono_emergencia=data.telefono_emergencia, plantel_id=data.plantel_id,
+        telefono_emergencia=data.telefono_emergencia, parentesco_emergencia=data.parentesco_emergencia,
+        grado=data.grado, tipo_sangre=data.tipo_sangre, plantel_id=data.plantel_id,
         fecha_inscripcion=data.fecha_inscripcion or hoy(), estado="activo", creado_por=user.id,
     )
     db.add(a)
@@ -188,7 +189,8 @@ def editar(aid: int, data: AlumnoIn, user: Usuario = Depends(require("alumnos.ed
         log(db, user, "cambiar_matricula", "alumno", a.id, f"{a.matricula} -> {data.matricula}")
         a.matricula = data.matricula
     for k in ("nombre", "apellido_paterno", "apellido_materno", "fecha_nacimiento", "telefono", "whatsapp",
-              "correo", "direccion", "contacto_emergencia", "telefono_emergencia", "plantel_id"):
+              "correo", "direccion", "contacto_emergencia", "telefono_emergencia", "parentesco_emergencia",
+              "grado", "tipo_sangre", "plantel_id"):
         setattr(a, k, getattr(data, k))
     if data.foto is not None:
         a.foto = data.foto

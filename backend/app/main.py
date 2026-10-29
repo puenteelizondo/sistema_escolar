@@ -40,6 +40,8 @@ async def lifespan(app: FastAPI):
     with engine.begin() as c:  # columnas agregadas después de la primera versión (bases ya existentes)
         c.execute(text("ALTER TABLE alumnos ADD COLUMN IF NOT EXISTS credencial VARCHAR(64)"))
         c.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_alumnos_credencial ON alumnos (credencial)"))
+        for col, tipo in (("parentesco_emergencia", "VARCHAR(40)"), ("grado", "VARCHAR(40)"), ("tipo_sangre", "VARCHAR(5)")):
+            c.execute(text(f"ALTER TABLE alumnos ADD COLUMN IF NOT EXISTS {col} {tipo}"))
     with SessionLocal() as db:
         seed_base(db)
         db.commit()

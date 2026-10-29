@@ -33,8 +33,11 @@ DEFAULT_CONFIG = {
     "dias_aviso": "5",
     "entrada_antes_min": "60",      # el lector acepta alumnos desde X min antes de la clase
     "entrada_tolerancia_min": "10",  # pasada la tolerancia, la llegada cuenta como retardo
-    "credencial_reglas": "Esta credencial es personal e intransferible.\nPreséntala al entrar al plantel y al pagar en caja.\n"
-                         "En caso de extravío avisa en recepción; la reposición tiene costo.",
+    "credencial_reglas": "Esta credencial es personal e intransferible.\nVálida solo para alumnos inscritos y vigentes.\n"
+                         "En caso de pérdida, reportar a la Dirección Académica.\nCEAG no se responsabiliza por mal uso.",
+    "credencial_encabezado_frente": "CEAG | CENTRO DE CAPACITACIÓN TÉCNICA DE COLIMA",
+    "credencial_encabezado_reverso": "CEAG | ESCUELAS DE MECÁNICA Y ELECTRÓNICA AUTOMOTRIZ",
+    "cct": "06PBT0214I",
     "credencial_devolver": "Si encuentras esta credencial, por favor devuélvela a la escuela o llámanos.",
     "ultimo_respaldo": "",
 }
@@ -128,7 +131,8 @@ def alumno_dict(a: Alumno, foto: bool = False) -> dict:
         "nombre_completo": a.nombre_completo, "fecha_nacimiento": a.fecha_nacimiento,
         "telefono": a.telefono, "whatsapp": a.whatsapp, "correo": a.correo,
         "direccion": a.direccion, "contacto_emergencia": a.contacto_emergencia,
-        "telefono_emergencia": a.telefono_emergencia, "plantel_id": a.plantel_id,
+        "telefono_emergencia": a.telefono_emergencia, "parentesco_emergencia": a.parentesco_emergencia,
+        "grado": a.grado, "tipo_sangre": a.tipo_sangre, "plantel_id": a.plantel_id,
         "plantel": a.plantel.nombre if a.plantel else None,
         "fecha_inscripcion": a.fecha_inscripcion, "estado": a.estado, "credencial": a.credencial,
     }

@@ -84,8 +84,14 @@ export async function formAlumno(a, onSaved) {
         ${campo('Correo', 'correo', a ? a.correo : '', { tipo: 'email' })}
         ${selector('Plantel', 'plantel_id', pl.filter((p) => p.activo || (a && a.plantel_id === p.id)).map((p) => [p.id, p.nombre]), a ? a.plantel_id : '', { vacio: '— Sin plantel —', attrs: 'data-num' })}
         ${campo('Dirección', 'direccion', a ? a.direccion : '', { clase: 'span2' })}
-        ${campo('Contacto de emergencia', 'contacto_emergencia', a ? a.contacto_emergencia : '')}
+        ${campo('Grado', 'grado', a ? a.grado : '', { attrs: 'maxlength="40" placeholder="Ej. Primero, Segundo"' })}
+        ${selector('Tipo de sangre', 'tipo_sangre', ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'], a ? a.tipo_sangre : '', { vacio: '— Sin dato —' })}
+        <div class="span2 cfg-sub">Contacto de emergencia <small class="muted">(sale al reverso de la credencial)</small></div>
+        ${campo('Nombre', 'contacto_emergencia', a ? a.contacto_emergencia : '')}
+        ${campo('Parentesco', 'parentesco_emergencia', a ? a.parentesco_emergencia : '', { attrs: 'maxlength="40" placeholder="Ej. Papá, Mamá, Tío"' })}
         ${campo('Teléfono de emergencia', 'telefono_emergencia', a ? a.telefono_emergencia : '', { tipo: 'tel' })}
+        ${can('alumnos.editar') || nuevo ? html`<div class="span2 cfg-sub">Credencial</div>
+        ${campo('Identificador de la tarjeta', 'credencial', a ? a.credencial : '', { clase: 'span2', attrs: 'autocomplete="off" data-ident class="mono"', ayuda: 'Pon el cursor aquí y escanea la tarjeta del alumno con el lector. Con este número se le toma asistencia en la entrada.' })}` : ''}
         ${!nuevo && can('alumnos.editar') ? selector('Estado', 'estado', ESTADOS_ALUMNO, a.estado) : ''}
       </div>
       <div class="form-error" hidden></div>
@@ -112,10 +118,24 @@ export async function formAlumno(a, onSaved) {
       onSaved && onSaved(a);
     } catch (err) { toast(err.message, 'error'); }
   });
+  // el lector "teclea" el número y manda Enter: que no envíe el formulario, solo pase al siguiente campo
+  const ident = $('[data-ident]', m.body);
+  if (ident) ident.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); toast('Identificador leído', 'info', 1500); }
+  });
   enviarForm(form, async (d) => {
-    const body = { ...d, matricula: d.matricula ? d.matricula.toUpperCase() : null };
+    const { credencial, ...resto } = d;
+    const body = { ...resto, matricula: d.matricula ? d.matricula.toUpperCase() : null };
     if (!body.fecha_inscripcion) delete body.fecha_inscripcion;
     const r = nuevo ? await post('/alumnos', body) : await put(`/alumnos/${a.id}`, body);
+    if (ident && (credencial || null) !== ((a && a.credencial) || null)) {
+      try { await put(`/alumnos/${r.id}/credencial`, { credencial: credencial || null }); } catch (er) {
+        m.close();
+        toast(`Alumno guardado, pero el identificador no: ${er.message}`, 'error', 8000);
+        onSaved && onSaved(r);
+        return;
+      }
+    }
     m.close();
     toast(nuevo ? `Alumno creado · matrícula ${r.matricula}` : 'Cambios guardados');
     onSaved && onSaved(r);
@@ -147,7 +167,10 @@ export async function expediente(root, ctx) {
           <div><dt>Nacimiento</dt><dd>${fdate(a.fecha_nacimiento)}</dd></div>
           <div><dt>Inscripción</dt><dd>${fdate(a.fecha_inscripcion)}</dd></div>
           <div class="wide"><dt>Dirección</dt><dd>${a.direccion || '—'}</dd></div>
-          <div class="wide"><dt>Emergencia</dt><dd>${a.contacto_emergencia || '—'} ${a.telefono_emergencia ? `· ${a.telefono_emergencia}` : ''}</dd></div>
+          <div><dt>Grado</dt><dd>${a.grado || '—'}</dd></div>
+          <div><dt>Tipo de sangre</dt><dd>${a.tipo_sangre || '—'}</dd></div>
+          <div class="wide"><dt>Emergencia</dt><dd>${a.contacto_emergencia || '—'}${a.parentesco_emergencia ? ` (${a.parentesco_emergencia})` : ''} ${a.telefono_emergencia ? `· ${a.telefono_emergencia}` : ''}</dd></div>
+          <div class="wide"><dt>Identificador de tarjeta</dt><dd class="mono">${a.credencial || 'Sin registrar'}</dd></div>
         </dl>
       </div>
       <div class="exp-btns">
@@ -190,7 +213,7 @@ export async function expediente(root, ctx) {
 
   const refrescar = () => ctx.refrescar();
   on(root, 'click', '[data-edit]', () => formAlumno(a, refrescar));
-  on(root, 'click', '[data-cred]', () => abrirCredencial(a, activa, ctx.publica, refrescar));
+  on(root, 'click', '[data-cred]', () => abrirCredencial(a, activa, refrescar));
   on(root, 'click', '[data-foto-exp]', async () => {
     const url = await capturarFoto(320);
     if (!url) return;
@@ -271,39 +294,42 @@ function editarMensualidad(m, onDone) {
 }
 
 // ---------------------------------------------------------------- credencial (impresa y chip)
-function abrirCredencial(a, inscripciones, publica, refrescar) {
+async function abrirCredencial(a, inscripciones, refrescar) {
   const insc = inscripciones.find((i) => i.estado === 'activa') || inscripciones[0];
   const datos = {
     matricula: a.matricula, nombre: a.nombre_completo, foto: a.foto,
-    curso: insc ? insc.curso : '', plantel: (insc && insc.plantel) || a.plantel, vigencia: insc ? insc.fecha_fin : null,
+    curso: insc ? insc.curso : '', plantel: (insc && insc.plantel) || a.plantel,
+    vigencia_inicio: insc ? insc.fecha_inicio : null, vigencia: insc ? insc.fecha_fin : null,
+    grado: a.grado, tipo_sangre: a.tipo_sangre, contacto_emergencia: a.contacto_emergencia,
+    parentesco_emergencia: a.parentesco_emergencia, telefono_emergencia: a.telefono_emergencia,
   };
-  const escuela = { nombre: publica.escuela_nombre, logo: publica.logo };
   const chip = can('alumnos.editar') ? html`<div class="chip-box">
-      <div><div class="cc-label">CREDENCIAL DE CHIP</div>
-        <div class="chip-num">${a.credencial ? html`<span class="mono">${a.credencial}</span>` : html`<span class="muted">Sin chip registrado</span>`}</div>
-        <small class="muted">El código de barras impreso siempre funciona. Registra el chip solo si usan tarjetas con chip.</small></div>
-      <div class="row-btns"><button type="button" class="btn sm" data-chip>${a.credencial ? 'Cambiar chip' : 'Registrar chip'}</button>
+      <div><div class="cc-label">IDENTIFICADOR DE LA TARJETA</div>
+        <div class="chip-num">${a.credencial ? html`<span class="mono">${a.credencial}</span>` : html`<span class="muted">Sin registrar</span>`}</div>
+        <small class="muted">Escanea la tarjeta del alumno para registrarlo. Con este número se le toma asistencia en la entrada.</small></div>
+      <div class="row-btns"><button type="button" class="btn sm" data-chip>${a.credencial ? 'Cambiar' : 'Registrar'}</button>
         ${a.credencial ? html`<button type="button" class="btn sm danger-o" data-chip-quitar>Quitar</button>` : ''}</div>
     </div>` : '';
   const m = can('credenciales.imprimir')
-    ? verCredenciales([datos], escuela, { titulo: `Credencial · ${a.matricula}`, extra: chip })
+    ? await verCredenciales([datos], { titulo: `Credencial · ${a.matricula}`, extra: chip })
     : modal({ titulo: `Credencial · ${a.matricula}`, ancho: 'md', cuerpo: html`${chip}<div class="modal-actions"><button type="button" class="btn" data-close>Cerrar</button></div>` });
+  if (!m) return;
   const reg = m.body.querySelector('[data-chip]');
   if (reg) reg.addEventListener('click', () => { m.close(); registrarChip(a, refrescar); });
   const q = m.body.querySelector('[data-chip-quitar]');
   if (q) q.addEventListener('click', async () => {
-    try { await put(`/alumnos/${a.id}/credencial`, { credencial: null }); toast('Chip quitado'); m.close(); refrescar(); } catch (e) { toast(e.message, 'error'); }
+    try { await put(`/alumnos/${a.id}/credencial`, { credencial: null }); toast('Identificador quitado'); m.close(); refrescar(); } catch (e) { toast(e.message, 'error'); }
   });
 }
 
 function registrarChip(a, refrescar) {
   const m = modal({
-    titulo: `Registrar chip · ${a.matricula}`, ancho: 'sm',
+    titulo: `Identificador de tarjeta · ${a.matricula}`, ancho: 'sm',
     cuerpo: html`<form class="form chip-form">
       <div class="chip-lector">🪪</div>
-      <p class="center"><b>Acerca la tarjeta de ${a.nombre_completo} al lector.</b><br>
-        <span class="muted">El número aparece solo. También puedes escribirlo a mano y pulsar Guardar.</span></p>
-      <input name="credencial" class="mono chip-input" autocomplete="off" placeholder="Número del chip" autofocus required>
+      <p class="center"><b>Escanea la tarjeta de ${a.nombre_completo} con el lector.</b><br>
+        <span class="muted">El número aparece solo y se guarda. También puedes escribirlo a mano y pulsar Guardar.</span></p>
+      <input name="credencial" class="mono chip-input" autocomplete="off" placeholder="Identificador de la tarjeta" autofocus required>
       <div class="form-error" hidden></div>
       <div class="modal-actions"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary">GUARDAR</button></div>
     </form>`,
@@ -312,7 +338,7 @@ function registrarChip(a, refrescar) {
   enviarForm(form, async (d) => {
     await put(`/alumnos/${a.id}/credencial`, { credencial: d.credencial });
     m.close();
-    toast('Chip registrado. Ya puede pasar su tarjeta en la entrada.');
+    toast('Identificador registrado. Ya puede pasar su tarjeta en la entrada.');
     refrescar();
   });
 }

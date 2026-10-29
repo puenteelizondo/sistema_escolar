@@ -133,7 +133,7 @@ export async function cursoDetalle(root, ctx) {
     try {
       const lista = await get(`/cursos/${c.id}/credenciales`);
       if (!lista.length) { toast('No hay alumnos activos en este curso', 'info'); return; }
-      verCredenciales(lista, { nombre: ctx.publica.escuela_nombre, logo: ctx.publica.logo }, { titulo: `Credenciales · ${c.nombre}` });
+      await verCredenciales(lista, { titulo: `Credenciales · ${c.nombre}` });
     } catch (e) { toast(e.message, 'error'); }
   });
   on(root, 'click', '[data-insc]', () => abrirInscribir({ curso: c, onDone: refrescar }));

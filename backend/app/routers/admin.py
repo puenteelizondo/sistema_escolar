@@ -34,7 +34,8 @@ def credencial_reverso(user: Usuario = Depends(require("credenciales.imprimir"))
     """Datos del reverso de la credencial (igual para todos los alumnos)."""
     c = cfg_all(db)
     return {k: c.get(k, "") for k in ("escuela_nombre", "logo", "direccion", "telefono", "whatsapp", "correo",
-                                     "credencial_reglas", "credencial_devolver")}
+                                     "credencial_reglas", "credencial_devolver", "credencial_encabezado_frente",
+                                     "credencial_encabezado_reverso", "cct")}
 
 
 @router.get("/config")

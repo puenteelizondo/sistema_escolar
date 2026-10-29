@@ -122,14 +122,16 @@ def detalle(cid: int, user: Usuario = Depends(require("cursos.ver")), db: Sessio
 def credenciales_curso(cid: int, user: Usuario = Depends(require("credenciales.imprimir")), db: Session = Depends(get_db)):
     """Datos para imprimir las credenciales de todos los alumnos activos del curso (incluye foto)."""
     c = _curso_o_404(db, cid, user)
-    filas = db.execute(
-        select(Alumno.matricula, Alumno.nombre_completo, Alumno.foto, Inscripcion.plantel_id)
-        .join(Inscripcion, Inscripcion.alumno_id == Alumno.id)
+    alumnos = db.scalars(
+        select(Alumno).join(Inscripcion, Inscripcion.alumno_id == Alumno.id)
         .where(Inscripcion.curso_id == cid, Inscripcion.estado == "activa", Alumno.estado != "baja")
         .order_by(Alumno.nombre_completo)).all()
     plantel = c.plantel.nombre if c.plantel else None
-    return [{"matricula": m, "nombre": n, "foto": f, "curso": c.nombre, "plantel": plantel, "vigencia": c.fecha_fin}
-            for m, n, f, _ in filas]
+    return [{"matricula": a.matricula, "nombre": a.nombre_completo, "foto": a.foto, "curso": c.nombre,
+             "plantel": plantel, "vigencia_inicio": c.fecha_inicio, "vigencia": c.fecha_fin, "grado": a.grado,
+             "tipo_sangre": a.tipo_sangre, "contacto_emergencia": a.contacto_emergencia,
+             "parentesco_emergencia": a.parentesco_emergencia, "telefono_emergencia": a.telefono_emergencia}
+            for a in alumnos]
 
 
 # ---------------------------------------------------------------- inscripciones

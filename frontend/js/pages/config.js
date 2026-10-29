@@ -46,9 +46,11 @@ export async function configuracion(root, ctx) {
         ${campo('WhatsApp', 'whatsapp', cfg.whatsapp, { tipo: 'tel' })}
         ${campo('Correo', 'correo', cfg.correo, { tipo: 'email' })}
         ${areaTexto('Datos fiscales (RFC, razón social…)', 'datos_fiscales', cfg.datos_fiscales, { clase: 'span2', filas: 3 })}
-        <div class="span2 cfg-sub">Reverso de la credencial <small class="muted">(igual para todos; usa también la dirección, teléfono, WhatsApp y correo de arriba)</small></div>
-        ${areaTexto('Reglas (una por renglón, máximo 4)', 'credencial_reglas', cfg.credencial_reglas, { clase: 'span2', filas: 4 })}
-        ${campo('Texto "si la encuentras…"', 'credencial_devolver', cfg.credencial_devolver, { clase: 'span2', attrs: 'maxlength="110"' })}
+        <div class="span2 cfg-sub">Credencial <small class="muted">(dirección, teléfono, WhatsApp y logo se toman de arriba)</small></div>
+        ${campo('Encabezado del frente', 'credencial_encabezado_frente', cfg.credencial_encabezado_frente, { clase: 'span2', attrs: 'maxlength="70"' })}
+        ${campo('Encabezado del reverso', 'credencial_encabezado_reverso', cfg.credencial_encabezado_reverso, { clase: 'span2', attrs: 'maxlength="70"' })}
+        ${campo('CCT (clave del centro de trabajo)', 'cct', cfg.cct, { attrs: 'maxlength="20"' })}
+        ${areaTexto('Reglamento (una regla por renglón, máximo 4)', 'credencial_reglas', cfg.credencial_reglas, { clase: 'span2', filas: 4 })}
       </div>
       <div class="logo-box"><div class="logo-prev" data-logo-prev>${cfg.logo ? html`<img src="${cfg.logo}" alt="Logo">` : html`<span class="muted">Sin logo</span>`}</div>
         <div><label class="btn">Subir logo (PNG o JPG)<input type="file" accept="image/png,image/jpeg" hidden data-logo></label>
@@ -68,7 +70,7 @@ export async function configuracion(root, ctx) {
     on(f, 'click', '[data-quitar-logo]', () => { logo = ''; setHTML($('[data-logo-prev]', f), html`<span class="muted">Sin logo</span>`); });
     f.addEventListener('submit', (e) => {
       e.preventDefault();
-      const d = Object.fromEntries(['escuela_nombre', 'direccion', 'telefono', 'whatsapp', 'correo', 'datos_fiscales', 'credencial_reglas', 'credencial_devolver'].map((k) => [k, f[k].value.trim()]));
+      const d = Object.fromEntries(['escuela_nombre', 'direccion', 'telefono', 'whatsapp', 'correo', 'datos_fiscales', 'credencial_reglas', 'credencial_encabezado_frente', 'credencial_encabezado_reverso', 'cct'].map((k) => [k, f[k].value.trim()]));
       guardar({ ...d, logo }, () => toast('Recarga la página para ver el nuevo nombre/logo en el menú', 'info', 5000));
     });
   }

@@ -86,12 +86,16 @@ class AlumnoIn(Base):
     direccion: str | None = None
     contacto_emergencia: str | None = None
     telefono_emergencia: str | None = None
+    parentesco_emergencia: str | None = Field(default=None, max_length=40)
+    grado: str | None = Field(default=None, max_length=40)
+    tipo_sangre: Literal["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"] | None = None
     plantel_id: int | None = None
     fecha_inscripcion: date | None = None
     estado: Literal["activo", "inactivo", "terminado", "suspendido", "baja"] | None = None
 
     _v = field_validator("matricula", "apellido_materno", "foto", "telefono", "whatsapp", "correo",
-                         "direccion", "contacto_emergencia", "telefono_emergencia", mode="before")(_limpia)
+                         "direccion", "contacto_emergencia", "telefono_emergencia", "parentesco_emergencia", "grado",
+                         "tipo_sangre", mode="before")(_limpia)
 
     @field_validator("matricula")
     @classmethod

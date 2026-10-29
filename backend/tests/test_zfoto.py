@@ -36,3 +36,15 @@ def test_retiro_muestra_motivo(admin):
     exp = admin.get(f"/api/alumnos/{a['id']}/expediente").json()
     ins = exp["inscripciones"][0]
     assert ins["estado"] == "retirada" and ins["retiro_motivo"] == "Cambió de horario" and ins["fecha_retiro"]
+
+
+def test_datos_de_credencial(admin):
+    r = admin.post("/api/alumnos", json={"nombre": "Greg", "apellido_paterno": "Prueba", "grado": "Segundo",
+                                         "tipo_sangre": "O+", "contacto_emergencia": "Daniel", "parentesco_emergencia": "Papá",
+                                         "telefono_emergencia": "3121775769"})
+    assert r.status_code in (200, 201), r.text
+    a = r.json()
+    assert (a["grado"], a["tipo_sangre"], a["parentesco_emergencia"]) == ("Segundo", "O+", "Papá")
+    assert admin.post("/api/alumnos", json={"nombre": "X", "apellido_paterno": "Y", "tipo_sangre": "Z+"}).status_code == 422
+    rev = admin.get("/api/credencial/reverso").json()
+    assert rev["credencial_encabezado_frente"].startswith("CEAG") and rev["cct"]

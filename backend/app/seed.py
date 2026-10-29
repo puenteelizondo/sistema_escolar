@@ -35,6 +35,12 @@ def seed_base(db: Session):
                 rol.permisos = [*(rol.permisos or []), perm]
         db.add(Configuracion(clave=clave, valor="1"))
         existentes.add(clave)
+    # el reglamento de la versión anterior (sin modificar) pasa al texto nuevo de la credencial
+    viejo = ("Esta credencial es personal e intransferible.\nPreséntala al entrar al plantel y al pagar en caja.\n"
+             "En caso de extravío avisa en recepción; la reposición tiene costo.")
+    r = db.get(Configuracion, "credencial_reglas")
+    if r is not None and (r.valor or "").strip() == viejo:
+        r.valor = DEFAULT_CONFIG["credencial_reglas"]
     for k, v in DEFAULT_CONFIG.items():
         if k not in existentes:
             db.add(Configuracion(clave=k, valor=v))
