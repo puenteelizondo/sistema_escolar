@@ -27,18 +27,28 @@ const cargarImagen = (src) => new Promise((res) => {
   i.src = src;
 });
 
-function fuente(ctx, mm, peso = 400) { ctx.font = `${peso} ${mm}px ${FUENTE}`; }
+// El texto se dibuja a su tamaño real en píxeles (sin la escala del lienzo): en Windows, letra diminuta
+// agrandada con escala sale con letras separadas o encimadas.
+const K = ANCHO_PX / ANCHO_MM;
+function fuente(ctx, mm, peso = 400) { ctx.font = `${peso} ${(mm * K).toFixed(2)}px ${FUENTE}`; }
+const medir = (ctx, t) => ctx.measureText(t).width / K;
+function escribir(ctx, t, x, y) {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillText(t, Math.round(x * K), Math.round(y * K));
+  ctx.restore();
+}
 
 /** Escribe un texto en una línea; si no cabe, reduce la letra hasta que quepa. */
 function texto(ctx, t, x, y, { mm = 2, peso = 400, color = TINTA, max = 0, alinear = 'left' } = {}) {
   let tam = mm;
   fuente(ctx, tam, peso);
-  if (max) while (ctx.measureText(t).width > max && tam > mm * 0.6) { tam -= 0.05; fuente(ctx, tam, peso); }
+  if (max) while (medir(ctx, t) > max && tam > mm * 0.6) { tam -= 0.05; fuente(ctx, tam, peso); }
   ctx.fillStyle = color;
   ctx.textAlign = alinear;
-  ctx.fillText(t, x, y);
+  escribir(ctx, t, x, y);
   ctx.textAlign = 'left';
-  return ctx.measureText(t).width;
+  return medir(ctx, t);
 }
 
 /** Parte un texto en renglones que quepan en `max` mm (con "…" si sobra). */
@@ -49,14 +59,14 @@ function renglones(ctx, t, max, maxLineas, mm, peso) {
   let linea = '';
   for (const p of palabras) {
     const prueba = linea ? `${linea} ${p}` : p;
-    if (ctx.measureText(prueba).width <= max || !linea) linea = prueba;
+    if (medir(ctx, prueba) <= max || !linea) linea = prueba;
     else { out.push(linea); linea = p; }
   }
   if (linea) out.push(linea);
   if (out.length > maxLineas) {
     const corte = out.slice(0, maxLineas);
     let ult = corte[maxLineas - 1];
-    while (ult.length > 1 && ctx.measureText(`${ult}…`).width > max) ult = ult.slice(0, -1);
+    while (ult.length > 1 && medir(ctx, `${ult}…`) > max) ult = ult.slice(0, -1);
     corte[maxLineas - 1] = `${ult}…`;
     return corte;
   }
@@ -66,7 +76,7 @@ function renglones(ctx, t, max, maxLineas, mm, peso) {
 function parrafo(ctx, t, x, y, { mm = 1.8, peso = 400, color = TINTA, max = 40, lineas = 3, alto = 2.3 } = {}) {
   const rs = renglones(ctx, t, max, lineas, mm, peso);
   ctx.fillStyle = color;
-  rs.forEach((r, i) => ctx.fillText(r, x, y + i * alto));
+  rs.forEach((r, i) => escribir(ctx, r, x, y + i * alto));
   return rs.length;
 }
 
@@ -74,8 +84,8 @@ function parrafo(ctx, t, x, y, { mm = 1.8, peso = 400, color = TINTA, max = 40, 
 function campoLinea(ctx, etiqueta, valor, x, y, { mm = 2.1, max = 46 } = {}) {
   fuente(ctx, mm, 700);
   ctx.fillStyle = TINTA;
-  ctx.fillText(etiqueta, x, y);
-  const w = ctx.measureText(etiqueta).width;
+  escribir(ctx, etiqueta, x, y);
+  const w = medir(ctx, etiqueta);
   texto(ctx, valor, x + w + 0.6, y, { mm, peso: 500, color: '#2e3442', max: Math.max(5, max - w - 0.6) });
 }
 
@@ -181,11 +191,11 @@ async function dibujarFrente(a, e) {
   iconoRFID(ctx, 69.4, y - 2.4 + (cl - 1) * 1.2);
   y += (cl - 1) * 2.55 + 3.1;
   const filas = [
-    ['GRADO: ', a.grado],
-    ['TIPO DE SANGRE: ', a.tipo_sangre],
-    ['VIGENCIA: ', a.vigencia ? (a.vigencia_inicio ? `${fdate(a.vigencia_inicio)} - ${fdate(a.vigencia)}` : fdate(a.vigencia)) : ''],
+    ['GRADO: ', a.grado || '—'],
+    ['TIPO DE SANGRE: ', a.tipo_sangre || '—'],
+    ['VIGENCIA: ', a.vigencia ? (a.vigencia_inicio ? `${fdate(a.vigencia_inicio)} - ${fdate(a.vigencia)}` : fdate(a.vigencia)) : '—'],
     ['CCT: ', e.cct],
-  ].filter(([, v]) => v);
+  ].filter(([, v]) => v); // grado, sangre y vigencia siempre aparecen (con "—" si falta el dato)
   for (const [k, v] of filas) {
     if (y > 49.6) break;
     campoLinea(ctx, k, v, x, y, { mm: 2.05, max });
